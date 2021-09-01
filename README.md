@@ -182,3 +182,74 @@ gradle build 폴더를 git에 포함하지 않는다.)
   * querydsl-apt: Querydsl 관련 코드 생성 기능 제공
   * querydsl-jpa: querydsl 라이브러리
 
+
+# H2
+H2 데이터베이스 설치
+* 개발이나 테스트 용도로 가볍고 편리한 DB, 웹 화면 제공
+* https://www.h2database.com
+
+다운로드 및 설치
+* h2 데이터베이스 버전은 스프링 부트 버전에 맞춘다.
+* 권한 주기: chmod 755 h2.sh
+
+데이터베이스 파일 생성 방법
+* jdbc:h2:~/querydsl (최소 한번)
+  * 연결 성공하면 ~ 경로에 query.mv.db 파일이 생성된다 
+* ~/querydsl.mv.db 파일 생성 확인
+* 이후 부터는 jdbc:h2:tcp://localhost/~/querydsl 이렇게 접속
+  * 인텔리제이로 어플리케이션을 실행하고, 따로 접속하면 에러가 나기 때문에 tcp 모드로 접속 
+> 참고: H2 데이터베이스의 MVCC 옵션은 H2 1.4.198 버전부터 제거되었습니다. 이후 부터는 옵션 없이
+사용하면 됩니다.
+> 주의: 가급적 안정화 버전을 사용하세요. 1.4.200 버전은 몇가지 오류가 있습니다.
+> 현재 안정화 버전은 1.4.199(2019-03-13) 입니다.
+> 다운로드 링크: https://www.h2database.com/html/download.html
+
+
+# 스프링부트 JPA,DB 설정 
+```yaml
+
+spring:
+  datasource:
+    url: jdbc:h2:tcp://localhost/~/querydsl
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+    # show_sql: true
+      format_sql: true
+
+logging.level:
+  org.hibernate.SQL: debug
+# org.hibernate.type: trace trace로 설정시 쿼리의 파라미터의 ? 가 보인다 
+```
+참고: 모든 로그 출력은 가급적 로거를 통해 남겨야 한다.
+> show_sql : 옵션은 System.out 에 하이버네이트 실행 SQL을 남긴다.  
+ 
+
+> org.hibernate.SQL : 옵션은 logger를 통해 하이버네이트 실행 SQL을 남긴다.
+
+
+##  쿼리 파라미터 로그 남기기
+* 로그에 다음을 추가하기 org.hibernate.type : SQL 실행 파라미터를 로그로 남긴다.
+* 외부 라이브러리 사용
+  * https://github.com/gavlyukovskiy/spring-boot-data-source-decorator
+* 스프링 부트를 사용하면 이 라이브러리만 추가하면 된다
+  * implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.5.8'
+
+> 참고: 쿼리 파라미터를 로그로 남기는 외부 라이브러리는 시스템 자원을 사용하므로, 개발 단계에서는
+편하게 사용해도 된다. 하지만 운영시스템에 적용하려면 꼭 성능테스트를 하고 사용하는 것이 좋다.
+
+# 예제 도메인 모델 
+* ![](img/95a6bdfc.png)
+
+* 롬복 설명
+* @Setter: 실무에서 가급적 Setter는 사용하지 않기
+* @NoArgsConstructor AccessLevel.PROTECTED: 기본 생성자 막고 싶은데, JPA 스팩상
+PROTECTED로 열어두어야 함
+* @ToString은 가급적 내부 필드만(연관관계 없는 필드만)
+* changeTeam() 으로 양방향 연관관계 한번에 처리(연관관계 편의 메소드)
