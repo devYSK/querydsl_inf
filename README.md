@@ -89,4 +89,96 @@
 
   * Querydsl 지원 클래스 직접 만들기
 
+# 프로젝트 생성
+* 스프링 부트 스타터(https://start.spring.io/)
+  * 사용 기능: Spring Web, jpa, h2, lombok
+  * querydsl은 별도로 디펜던시 추가 
+
+
+## IntelliJ Gradle 대신에 자바로 바로 실행하기
+* 최근 IntelliJ 버전은 Gradle로 실행을 하는 것이 기본 설정이다. 이렇게 하면 실행속도가 느리다. 다음과
+  같이 변경하면 자바로 바로 실행하므로 좀 더 빨라진다.
+
+1. 1references Build, Execution, Deployment Build Tools Gradle
+2. Build and run using: Gradle IntelliJ IDEA
+3. Run tests using: Gradle IntelliJ IDEA
+
+```kotlin
+# build.gradle 에 주석을 참고해서 querydsl 설정 추가
+plugins {
+  id 'org.springframework.boot' version ‘2.2.2.RELEASE'
+  id 'io.spring.dependency-management' version '1.0.8.RELEASE'
+
+  //querydsl 추가
+  id "com.ewerk.gradle.plugins.querydsl" version "1.0.10"
+  id 'java'
+}
+
+...
+
+dependencies {
+  implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+  implementation 'org.springframework.boot:spring-boot-starter-web'
+  //querydsl 추가
+  implementation 'com.querydsl:querydsl-jpa'
+  //
+  compileOnly 'org.projectlombok:lombok'
+  runtimeOnly 'com.h2database:h2'
+  annotationProcessor 'org.projectlombok:lombok'
+  testImplementation('org.springframework.boot:spring-boot-starter-test') {
+  exclude group: ‘org.junit.vintage’, module: ‘junit-vintage-engine'
+  }
+}
+
+//querydsl 추가 시작
+def querydslDir = "$buildDir/generated/querydsl"
+
+querydsl {
+    jpa = true
+    querydslSourcesDir = querydslDir
+}
+
+sourceSets {
+    main.java.srcDir querydslDir
+}
+
+configurations {
+    querydsl.extendsFrom compileClasspath
+}
+
+compileQuerydsl {
+    options.annotationProcessorPath = configurations.querydsl
+}
+//querydsl 추가 끝
+```
+
+## 빌드하여 querydsl용 QType Entity 생성하는법
+
+검증용 Q 타입 생성
+* querydsl이 @Entity 를 보고 자동으로 생성해준다. 
+
+* Gradle IntelliJ 사용법 (인텔리제이 오른쪽 gradle에서 사용하면 된다. )
+  * Gradle Tasks build clean
+  * Gradle Tasks other compileQuerydsl
+
+* Gradle 콘솔 사용법
+  * ./gradlew clean compileQuerydsl
+
+* Q 타입 생성 확인
+  * build -> generated -> querydsl
+    * study.querydsl.entity.QHello.java 파일이 생성되어 있어야 함
+    * 빌드파일 아래에 같은 패키지명으로 생성되어있따. 
+> 참고: Q타입은 컴파일 시점에 자동 생성되므로 버전관리(GIT)에 포함하지 않는 것이 좋다. 앞서 설정에서
+생성 위치를 gradle build 폴더 아래 생성되도록 했기 때문에 이 부분도 자연스럽게 해결된다. (대부분
+gradle build 폴더를 git에 포함하지 않는다.)
+
+*  참고: 스프링 부트에 아무런 설정도 하지 않으면 h2 DB를 메모리 모드로 JVM안에서 실행한다
+
+# 라이브러리 살펴보기 
+
+* gradle 의존관계 보기 : ./gradlew dependencies --configuration compileClasspath
+
+### Querydsl 라이브러리 살펴보기
+  * querydsl-apt: Querydsl 관련 코드 생성 기능 제공
+  * querydsl-jpa: querydsl 라이브러리
 
