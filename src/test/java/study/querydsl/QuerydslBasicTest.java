@@ -1,5 +1,6 @@
 package study.querydsl;
 
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,5 +89,22 @@ public class QuerydslBasicTest {
                 .selectFrom(member)
                 .where(member.username.eq("member1").and(member.age.eq(10)))
                 .fetchOne();
+    }
+
+    @Test
+    public void aggregation() {
+        List<Tuple> fetch = jpaQueryFactory
+                .select(member.count(),
+                        member.age.sum(),
+                        member.age.avg(),
+                        member.age.max(),
+                        member.age.min()
+                )
+                .from(member)
+                .fetch();
+
+        Tuple tuple = fetch.get(0);
+
+
     }
 }
