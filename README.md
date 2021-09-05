@@ -693,6 +693,36 @@ public void join_on_no_relation() throws Exception {
 * 일반조인: leftJoin(member.team, team)
 * on조인: from(member).leftJoin(team).on(xxx)
 
+# 조인 - 페치조인
+* 페치 조인은 SQL에서 제공하는 기능은 아니다. SQL조인을 활용해서 연관된 엔티티를 SQL 한번에
+  조회하는 기능이다. 주로 성능 최적화에 사용하는 방법이다
+  * 한쿼리로 다 끌고온다.
+
+
+## 페치조인 적용 
+* 즉시 로딩으로 Member,Team SQL 쿼리 조인으로 한번에 조회 
+```java
+@PersistenceUnit // EntityManagerFactory를 만들어줌 
+EntityManagerFactory emf;
+
+@Test
+public void fetchJoinUse() throws Exception {
+    em.flush();
+    em.clear();
+    Member findMember = queryFactory
+        .selectFrom(member)
+        .join(member.team, team).fetchJoin() // 
+        .where(member.username.eq("member1"))
+        .fetchOne();
+
+    boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
+    assertThat(loaded).as("페치 조인 적용").isTrue();
+}
+```
+
+사용방법
+* join(), leftJoin() 등 조인 기능 뒤에 fetchJoin() 이라고 추가하면 된다.
+> 참고: 페치 조인에 대한 자세한 내용은 JPA 기본편이나, 활용2편을 참고하자
 
 
 
