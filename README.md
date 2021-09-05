@@ -724,5 +724,131 @@ public void fetchJoinUse() throws Exception {
 * join(), leftJoin() 등 조인 기능 뒤에 fetchJoin() 이라고 추가하면 된다.
 > 참고: 페치 조인에 대한 자세한 내용은 JPA 기본편이나, 활용2편을 참고하자
 
+# 서브쿼리(서브 쿼리)
 
+* com.querydsl.jpa.JPAExpressions 사용
+
+
+```java
+/**
+* 나이가 가장 많은 회원 조회
+*/
+@Test
+public void subQuery() throws Exception {
+    QMember memberSub = new QMember("memberSub"); // 서브쿼리 조회용, alias가 같으면 안됨 
+    List<Member> result = queryFactory
+        .selectFrom(member)
+        .where(member.age.eq(JPAExpressions // import
+        .select(memberSub.age.max())
+            .from(memberSub)
+        ))
+        .fetch();
+    
+    assertThat(result).extracting("age")
+        .containsExactly(40);
+}
+```
+* member랑 alias가 겹치면 안되므로 QMember를 새로 생성
+
+## 서브쿼리 여러 건 처리 in 사용
+* 서브쿼리 in
+
+```java
+@Test
+public void subQueryIn() throws Exception {
+    QMember memberSub = new QMember("memberSub");
+    List<Member> result = queryFactory
+        .selectFrom(member)
+        .where(member.age.in(
+                JPAExpressions
+                    .select(memberSub.age)
+                    .from(memberSub)
+                    .where(memberSub.age.gt(10))
+        ))
+        .fetch();
+        
+    assertThat(result).extracting("age")
+    .containsExactly(20, 30, 40);
+}
+```
+
+## select 절에서 subquery
+
+```java
+QMember memberSub = new QMember("memberSub");
+List<Tuple> fetch = queryFactory
+    .select(member.username,
+            JPAExpressions
+                .select(memberSub.age.avg())
+                .from(memberSub)
+            ).from(member)
+    .fetch();
+
+    for (Tuple tuple : fetch) {
+        System.out.println("username = " + tuple.get(member.username));
+        System.out.println("age = " +
+        tuple.get(JPAExpressions.select(memberSub.age.avg())
+            .from(memberSub)));
+    }
+```
+* from 절의 서브쿼리 한계
+> JPA JPQL 서브쿼리의 한계점으로 from 절의 서브쿼리(인라인 뷰)는 지원하지 않는다. 당연히 Querydsl
+도 지원하지 않는다. 하이버네이트 구현체를 사용하면 select 절의 서브쿼리는 지원한다. Querydsl도
+하이버네이트 구현체를 사용하면 select 절의 서브쿼리를 지원한다.
+
+* from 절의 서브쿼리 해결방안
+1. 서브쿼리를 join으로 변경한다. (가능한 상황도 있고, 불가능한 상황도 있다.)
+2. 애플리케이션에서 쿼리를 2번 분리해서 실행한다.
+3. nativeSQL을 사용한다
+
+# Case문
+
+* case, when, then
+
+```java
+//단순한 조건
+List<String> result = queryFactory
+        .select(member.age
+                .when(10).then("열살")
+                .when(20).then("스무살")
+                .otherwise("기타"))
+        .from(member)
+        .fetch();
+
+//복잡한 조건
+List<String> result = queryFactory
+        .select(new CaseBuilder()
+            .when(member.age.between(0, 20)).then("0~20살")
+            .when(member.age.between(21, 30)).then("21~30살")
+            .otherwise("기타"))
+        .from(member)
+        .fetch();
+```
+
+* orderBy에서 Case 문 함께 사용하기 예제
+> 참고: 강의 이후 추가된 내용입니다.  
+
+예를 들어서 다음과 같은 임의의 순서로 회원을 출력하고 싶다면?
+1. 0 ~ 30살이 아닌 회원을 가장 먼저 출력
+2. 0 ~ 20살 회원 출력
+3. 21 ~ 30살 회원 출력
+
+```java
+    NumberExpression<Integer> rankPath = new CaseBuilder()
+                .when(member.age.between(0, 20)).then(2)
+                .when(member.age.between(21, 30)).then(1)
+                .otherwise(3);
+        
+    List<Tuple> result = queryFactory
+                .select(member.username, member.age, rankPath)
+                .from(member)
+                .orderBy(rankPath.desc())
+                .fetch();
+        
+        for (Tuple tuple : result) {
+            String username = tuple.get(member.username);
+            Integer age = tuple.get(member.age);Integer rank = tuple.get(rankPath);
+            System.out.println("username = " + username + " age = " + age + " rank = " + rank);
+
+```
 
