@@ -852,3 +852,6 @@ List<String> result = queryFactory
 
 ```
 
+* Querydsl은 자바 코드로 작성하기 때문에 rankPath 처럼 복잡한 조건을 변수로 선언해서 select 절,
+  orderBy 절에서 함께 사용할 수 있다
+
