@@ -945,3 +945,66 @@ List<MemberDto> result = em
   * 생성자 사용
 
 
+### `Projections 클래스를 사용해야 한다`
+
+## 프로퍼티 접근 - setter 
+* Projections.bean
+```java
+List<MemberDto> result = queryFactory
+    .select(Projections.bean(MemberDto.class,
+            member.username,
+            member.age))
+    .from(member)
+    .fetch();
+```
+
+## 필드 직접 접근
+* Projections.fields
+```java
+List<MemberDto> result = queryFactory
+        .select(Projections.fields(MemberDto.class,
+                member.username,
+                member.age))
+        .from(member)
+        .fetch();
+```
+
+* 프로퍼티 접근이나 필드 접근 방식에서 이름(별칭)이 다를때는? 
+
+## 별칭이 다를 때 
+* ExpressionUtils
+```java
+import lombok.Data;
+@Data
+public class UserDto {
+    private String name;
+    private int age;
+}
+
+List<UserDto> fetch = queryFactory
+    .select(Projections.fields(UserDto.class,
+            member.username.as("name"),
+            ExpressionUtils.as(
+                JPAExpressions
+                .select(memberSub.age.max())
+                .from(memberSub), "age")
+    ))
+        .from(member)
+        .fetch();
+```
+
+* 프로퍼티나, 필드 접근 생성 방식에서 이름이 다를 때 해결 방안
+* ExpressionUtils.as(source,alias) : 필드나, 서브 쿼리에 별칭 적용
+* username.as("memberName") : 필드에 별칭 적용
+
+## 생성자 사용
+* Projections.constructor
+```java
+List<MemberDto> result = queryFactory
+    .select(Projections.constructor(MemberDto.class,
+            member.username,
+            member.age))
+    .from(member).fetch();
+}
+```
+
