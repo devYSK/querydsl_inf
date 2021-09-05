@@ -855,3 +855,36 @@ List<String> result = queryFactory
 * Querydsl은 자바 코드로 작성하기 때문에 rankPath 처럼 복잡한 조건을 변수로 선언해서 select 절,
   orderBy 절에서 함께 사용할 수 있다
 
+# 상수, 문자 더하기
+
+* 상수가 필요하면 querydsl의 Expressions.constant(xxx) 사용
+
+```java
+Tuple result = queryFactory
+    .select(member.username, Expressions.constant("A"))
+    .from(member)
+    .fetchFirst();
+```
+
+* 참고: 위와 같이 최적화가 가능하면 SQL에 constant 값을 넘기지 않는다. 상수를 더하는 것 처럼 최적화가
+   어려우면 SQL에 constant 값을 넘긴다.
+
+## 문자 더하기
+
+* ex) username + _ + age
+
+```java
+String result = queryFactory
+    .select(member.username.concat("_").concat(member.age.stringValue()))
+    .from(member)
+    .where(member.username.eq("member1"))
+    .fetchOne();
+// 결과 : member1_10
+```
+
+* `참고: member.age.stringValue() 부분이 중요한데, 문자가 아닌 다른 타입들은 stringValue() 로
+  문자로 변환할 수 있다. 이 방법은 ENUM을 처리할 때도 자주 사용한다.`
+
+
+
+

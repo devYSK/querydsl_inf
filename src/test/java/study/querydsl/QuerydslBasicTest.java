@@ -28,12 +28,12 @@ public class QuerydslBasicTest {
     @Autowired
     EntityManager em;
 
-    JPAQueryFactory jpaQueryFactory;
+    JPAQueryFactory queryFactory;
 
 
     @BeforeEach
     public void before() {
-        jpaQueryFactory = new JPAQueryFactory(em);
+        queryFactory = new JPAQueryFactory(em);
         Team teamA = new Team("teamA");
         Team teamB = new Team("teamB");
 
@@ -77,7 +77,7 @@ public class QuerydslBasicTest {
 
         QMember m = new QMember("m");
 
-        Member findMember = jpaQueryFactory
+        Member findMember = queryFactory
                 .select(member)
                 .from(member)
                 .where(member.username.eq("member1"))
@@ -89,7 +89,7 @@ public class QuerydslBasicTest {
 
     @Test
     public void search() {
-        jpaQueryFactory
+        queryFactory
                 .selectFrom(member)
                 .where(member.username.eq("member1").and(member.age.eq(10)))
                 .fetchOne();
@@ -97,7 +97,7 @@ public class QuerydslBasicTest {
 
     @Test
     public void aggregation() {
-        List<Tuple> fetch = jpaQueryFactory
+        List<Tuple> fetch = queryFactory
                 .select(member.count(),
                         member.age.sum(),
                         member.age.avg(),
@@ -114,7 +114,7 @@ public class QuerydslBasicTest {
 
     @Test
     public void join() {
-        List<Member> result = jpaQueryFactory.selectFrom(member)
+        List<Member> result = queryFactory.selectFrom(member)
                 .join(member.team, team)
                 .where(team.name.eq("teamA"))
                 .fetch();
@@ -137,7 +137,7 @@ public class QuerydslBasicTest {
         em.persist(new Member("teamA"));
         em.persist(new Member("teamB"));
 
-        List<Member> result = jpaQueryFactory
+        List<Member> result = queryFactory
                 .select(member)
                 .from(member, team)
                 .where(member.username.eq(team.name))
@@ -156,7 +156,7 @@ public class QuerydslBasicTest {
      */
     @Test
     public void join_on_filtering() throws Exception {
-        List<Tuple> result = jpaQueryFactory
+        List<Tuple> result = queryFactory
                 .select(member, team)
                 .from(member)
                 .leftJoin(member.team, team).on(team.name.eq("teamA"))
@@ -175,7 +175,7 @@ public class QuerydslBasicTest {
     public void join_on_no_relation() throws Exception {
         em.persist(new Member("teamA"));
         em.persist(new Member("teamB"));
-        List<Tuple> result = jpaQueryFactory
+        List<Tuple> result = queryFactory
                 .select(member, team)
                 .from(member)
                 .leftJoin(team).on(member.username.eq(team.name))
@@ -190,7 +190,7 @@ public class QuerydslBasicTest {
     @Test
     public void fetchJoinUse() throws Exception {
         em.flush();
-        em.clear();Member findMember = jpaQueryFactory
+        em.clear();Member findMember = queryFactory
                 .selectFrom(member)
                 .join(member.team, team).fetchJoin()
                 .where(member.username.eq("member1"))
@@ -207,7 +207,7 @@ public class QuerydslBasicTest {
     public void subQuery() throws Exception {
         QMember memberSub = new QMember("memberSub");
 
-        List<Member> result = jpaQueryFactory
+        List<Member> result = queryFactory
                 .selectFrom(member)
                 .where(member.age.eq(
                         JPAExpressions
@@ -223,7 +223,7 @@ public class QuerydslBasicTest {
     public void selectSubQuery() {
         QMember memberSub = new QMember("memberSub");
 
-        List<Tuple> fetch = jpaQueryFactory
+        List<Tuple> fetch = queryFactory
                 .select(member.username,
                         JPAExpressions
                                 .select(memberSub.age.avg())
@@ -237,6 +237,17 @@ public class QuerydslBasicTest {
                             .from(memberSub)));
         }
 
+    }
+
+    @Test
+    public void concat() {
+        String result = queryFactory
+                .select(member.username.concat("_").concat(member.age.stringValue()))
+                .from(member)
+                .where(member.username.eq("member1"))
+                .fetchOne();
+
+        System.out.println("member1 : " +  result);
     }
 
 }
