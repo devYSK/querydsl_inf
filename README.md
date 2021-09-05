@@ -885,6 +885,63 @@ String result = queryFactory
 * `참고: member.age.stringValue() 부분이 중요한데, 문자가 아닌 다른 타입들은 stringValue() 로
   문자로 변환할 수 있다. 이 방법은 ENUM을 처리할 때도 자주 사용한다.`
 
+# `중급 문법`
 
+# 프로젝션과 결과 반환 - 기본
+
+* 프로젝션 : select 대상을 지정 
+
+## 프로젝션 대상이 하나 
+```java
+List<String> result = queryFactory
+    .select(member.username)
+    .from(member)
+    .fetch();
+```
+* 프로젝션 대상이 하나면 타입을 명확히 지정 가능 (member.username 은 String 타입)
+* 프로젝션 대상이 둘 이상이면 튜플이나 DTO로 조회 
+
+## 프로젝션 대상이 둘 이상일 때 사용 - 튜플 조회 (member.username, member.age 등 둘 이상)
+
+```java
+List<Tuple> result = queryFactory
+    .select(member.username, member.age)
+    .from(member)
+    .fetch();
+
+for (Tuple tuple : result) {
+    String username = tuple.get(member.username);
+    Integer age = tuple.get(member.age);
+    System.out.println("username=" + username);
+    System.out.println("age=" + age);
+}
+```
+## !!!!!! 튜플 사용시 주의사항 -- 의존성을 줄이자 
+* 레파지토리 계층에서는 사용해도 되지만, 서비스 계층이나 컨트롤러 계층까지 넘어가는건 절대 설계적으로 좋지 않다 
+  * 하부 구현 기술을 앞단(서비스, 컨트롤러)에서 알면 좋지 않다. 
+  * `의존성을 없애는게 좋다. 그래야 나중에 기술을 바꿔 튜플대신 다른걸 사용하더라도 서비스나 컨트롤러 계층의 코드 수정이 없다. `
+    * 레파지토리 계층의 코드 수정의 서비스 계층의 코드에 영향을 끼치지 않게!  
+    * 튜플도 결국 querydsl에 종속적 관계이기 때문에! 
+  * 그래서 dto로 바꿔서 전달해주는것을 추천한다.   
+
+# 프로젝션과 결과 반환 - DTO 조회
+
+* 순수 JPA에서 DTO 조회 
+```java
+List<MemberDto> result = em
+        .createQuery("select new study.querydsl.dto.MemberDto(m.username, m.age) " + "from Member m", MemberDto.class)
+        .getResultList();
+```
+
+* 순수 JPA에서 DTO를 조회할 때는 new 명령어를 사용해야함
+* `DTO의 package이름을 다 적어줘야해서 지저분함`
+* 생성자 방식만 지원함
+
+# Querydsl 빈 생성(Bean population)
+* 결과를 DTO 반환할 때 사용
+* 다음 3가지 방법 지원
+  * 프로퍼티 접근
+  * 필드 직접 접근
+  * 생성자 사용
 
 
