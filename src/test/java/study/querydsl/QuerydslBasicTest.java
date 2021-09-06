@@ -307,4 +307,12 @@ public class QuerydslBasicTest {
     private BooleanExpression ageEq(Integer ageCond) {
         return ageCond != null ? member.age.eq(ageCond) : null;
     }
+
+    @Test
+    public void bulkUpdate() {
+        queryFactory
+                .update(member)
+                .set(member.age, member.age.add(1))
+                .execute();
+    }
 }

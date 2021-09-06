@@ -1120,3 +1120,46 @@ private BooleanExpression ageEq(Integer ageCond) {
 이런 코드를 함께 사용해야 하거나, 이런 조건코드가 너무 많다면, 별도의 클래스를 만들면 된다.  
 >예를 들면 MemberPredicates 같은 클래스를 만들어서 넣어두는 것이지요.
 
+# 수정 삭제 배치 쿼리(벌크 연산)
+
+* 쿼리 한번으로 대량 데이터 수정
+
+* `벌크 연산을 실행하고 나면 영속성 컨텍스트를(Persistent Context) 초기화 해 주는것이 낫다  `
+  * 실제 DB와 영속성 컨텍스트의 값이 다르기 때문이다.
+  * em.flush(), em.clear();
+
+
+
+* 회원의 나이가 28보다 아래면 멤버 이름 모두를 비회원으로 수정 
+```java
+long count = queryFactory   
+        .update(member)
+        .set(member.username, "비회원")
+        .where(member.age.lt(28))
+        .execute();
+```
+
+* 기존 숫자에 1 더하기 
+```java
+long count = queryFactory
+    .update(member)
+    .set(member.age, member.age.add(1)) // 
+    .execute();
+```
+* 곱하기는 member.age.multiply(x)
+
+* 쿼리 한번으로 대량 데이터 삭제 
+
+```java
+long count = queryFactory
+    .delete(member)
+    .where(member.age.gt(18))
+    .execute();
+```
+
+> 주의: JPQL 배치와 마찬가지로, 영속성 컨텍스트에 있는 엔티티를 무시하고 실행되기 때문에 배치 쿼리를
+실행하고 나면 영속성 컨텍스트를 초기화 하는 것이 안전하다.
+
+
+
+
