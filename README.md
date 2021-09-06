@@ -1008,3 +1008,52 @@ List<MemberDto> result = queryFactory
 }
 ```
 
+# 프로젝션과 결과 반환 - @QueryProjection
+* DTO로 조회하는것의 궁극의 해결책 
+
+## 생성자 + @QueryProjection
+
+```java
+@Data
+public class MemberDto {
+    private String username;
+    private int age;
+    
+    public MemberDto() {
+    }
+
+    @QueryProjection
+    public MemberDto(String username, int age) {
+        this.username = username;
+        this.age = age;
+    }
+}
+```
+* 빌드해야 한다. 
+* ./gradlew compileQuerydsl
+* QMemberDto 생성 확인
+
+## @QueryProjection 활용
+```java
+List<MemberDto> result = queryFactory
+        .select(new QMemberDto(member.username, member.age))
+        .from(member)
+        .fetch();
+```
+이 방법은 컴파일러로 타입을 체크할 수 있으므로 가장 안전한 방법이다.  
+`다만 DTO에 QueryDSL 어노테이션을 유지해야 하는 점과 DTO까지 Q 파일을 생성해야 하는 단점이 있다.`
+* dto가 querydsl에 의존적이게 된다. 
+
+## distinct
+```java
+List<String> result = queryFactory
+    .select(member.username).distinct()
+    .from(member)
+    .fetch();
+```
+
+* 참고: distinct는 JPQL의 distinct와 같다
+
+
+
+
